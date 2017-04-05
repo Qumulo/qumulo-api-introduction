@@ -10,8 +10,10 @@ Below is a diagram of the Qumulo API ecosystem. The green elements highlight the
 
 ## Installation
 
-1. If not already installed, install [python 2.7.x](https://www.python.org/downloads/) and curl (`brew install curl` on a mac or `apt-get install curl` on Ubuntu).
-2. From your Qumulo cluster, navigate to /api, the "API & Tools" button inside of the web application.
+1. Install the necessary tools:
+    - **Python** [python 2.7.x](https://www.python.org/downloads/)
+    - **curl** (`brew install curl` on a mac or `apt-get install curl` on Ubuntu)
+2. In your web browser, log in to the Qumulo cluster. Navigate to "API & Tools" (/api) in the web application.
 3. Click "Download Command-Line Tools" at the top of the page.
 4. Unzip the qumulo_api.zip 
 5. `cd` inside of the unzipped qumulo_api directory. You shoud see `qq` and a directory names `qumulo`.
