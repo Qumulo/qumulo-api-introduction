@@ -5,7 +5,7 @@ While the Mac comes with Python installed by default, there are a few challenges
 1. Dealing with OpenSSL version issues
 2. Keeping your environment clean
 
-## Setup Installation
+## Setup and installation
 
 1. Install latest OpenSSL and python
     ```bash

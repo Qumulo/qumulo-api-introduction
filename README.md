@@ -81,6 +81,7 @@ rc.login(os.environ['API_USER'], os.environ['API_PASSWORD'])
 # Get file system stats
 rc.fs.read_fs_stats()
 ```
+If you hit issues related to SSL when trying to run this, please follow these [directions on setting up the Qumulo API on Mac OSX](qumulo-api-on-mac-osx.md).
 
 ### **curl** - Raw HTTP requests with the curl command-line tool.
 
