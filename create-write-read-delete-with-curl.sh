@@ -2,13 +2,7 @@ export API_HOSTNAME={Replace-With-Qumulo-Cluster-Host}
 export API_USER={Replace-With-Qumulo-Api-User}
 export API_PASSWORD={Replace-With-Qumulo-Api-User}
 
-# Login using the credentials above.
-curl -sX POST \
-       -H "Content-Type: application/json" \
-       -k https://$API_HOSTNAME:8000/v1/session/login \
-       -d "{\"username\": \"$API_USER\", \"password\": \"$API_PASSWORD\"}"
-
-# set up the bearer token. requires jq command line tool for parsing json.
+# login and set up the bearer token. requires jq command line tool for parsing json.
 export API_TOKEN=$(curl -sX POST \
        -H "Content-Type: application/json" \
        -k https://$API_HOSTNAME:8000/v1/session/login \
