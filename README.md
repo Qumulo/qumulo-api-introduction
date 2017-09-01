@@ -118,6 +118,7 @@ curl -X GET \
  "free_size_bytes": "7365139591168"}
 ```
 
+Now that you've learned some basics regarding curl and the Qumulo API, here's an example of how to: [create, write, read, and delete](create-write-read-delete-with-curl.sh)
 
 
 [api-ecosytem]: assets/qumulo-api-ecosystem-2017-03.png "Qumulo API Ecosystem"
