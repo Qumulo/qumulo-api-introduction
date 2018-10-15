@@ -11,7 +11,7 @@ While the Mac comes with Python installed by default, there are a few challenges
     ```bash
     $ brew update
     $ brew install openssl
-    $ brew link openssl --force
+    $ brew link /usr/local/opt/openssl/bin/openssl --force  # this isn't guaranteed to work, but "it worked on my machine", even with an error
     $ brew install python --with-brewed-openssl
     # This will install python and python tools to /usr/local/bin rather than the default /usr/bin
     ```
