@@ -11,7 +11,7 @@ Below is a diagram of the Qumulo API ecosystem. The green elements highlight the
 ## Installation
 
 1. Install the necessary tools:
-    - **Python** [python 2.7.x](https://www.python.org/downloads/)
+    - **Python** [python 3.4.x](https://www.python.org/downloads/)
     - **curl** (`brew install curl` on a mac or `apt-get install curl` on Ubuntu)
 2. In your web browser, log in to the Qumulo cluster. Navigate to "API & Tools" (/api) in the web application.
 3. Click "Download Command-Line Tools" at the top of the page.
@@ -69,7 +69,7 @@ export API_USER={your-qumulo-api-user-name}
 export API_PASSWORD={your-qumulo-api-password}
 ```
 
-Then, from the command line, start python `$ python` and run the following code:
+Then, from the command line, start python `$ python3` and run the following code:
 ```python
 import os
 from qumulo.rest_client import RestClient

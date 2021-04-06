@@ -17,9 +17,9 @@ While the Mac comes with Python installed by default, there are a few challenges
     ```
     ```bash
     # confirm everything is working
-    $ python --version  
-    Python 2.7.<something>
-    $ python -c "import ssl; print ssl.OPENSSL_VERSION"
+    $ python3 --version  
+    Python 3.<something>
+    $ python3 -c "import ssl; print ssl.OPENSSL_VERSION"
     OpenSSL 1.<something> ...
     # If this says 0.something, things haven't installed correctly.
     ```
@@ -41,5 +41,5 @@ While the Mac comes with Python installed by default, there are a few challenges
     $ pip install qumulo_api
     ... Successfully installed ...
     # verify it's installed, and see path where it's installed
-    python -c "import qumulo; print qumulo.__file__"
+    python3 -c "import qumulo; print qumulo.__file__"
     ```
