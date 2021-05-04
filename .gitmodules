@@ -1,0 +1,3 @@
+[submodule "github-workflows"]
+	path = github-workflows
+	url = https://github.com/Qumulo/github-workflows.git
