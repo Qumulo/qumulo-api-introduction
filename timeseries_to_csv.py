@@ -21,16 +21,20 @@ from collections import OrderedDict
 from qumulo.rest_client import RestClient
 
 
+def parse_args(args: Sequence[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description='Example command usage usage:\npython timeseries-to-csv.py --host product --user admin --pass admin',
+        epilog='.',
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+    parser.add_argument('--host', required=True, help='Required: Specify host (Qumulo cluster)')
+    parser.add_argument('--user', required=True, help='Specify api user')
+    parser.add_argument('--pass', required=True, dest='passwd', help='Specify api password ')
+    return parser.parse_args(args)
+
+
 def main():
-
-    parser = argparse.ArgumentParser(description='Example command usage usage:\npython timeseries-to-csv.py --host product --user admin --pass admin'
-                                    , epilog='.'
-                                    , formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument("--host", required=True, help="Required: Specify host (Qumulo cluster)")
-    parser.add_argument("--user", required=True, help="Specify api user")
-    parser.add_argument("--pass", required=True, dest="passwd", help="Specify api password ")
-    args = parser.parse_args()
-
+    args = parse_args(sys.argv)
     rc = RestClient(args.host, 8000)
     rc.login(args.user, args.passwd);
 
