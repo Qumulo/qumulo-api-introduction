@@ -17,25 +17,47 @@ import time
 import calendar
 import datetime
 import argparse
+
 from collections import OrderedDict
+from typing import Sequence
+
 from qumulo.rest_client import RestClient
 
 
 def parse_args(args: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description='Example command usage usage:\npython timeseries-to-csv.py --host product --user admin --pass admin',
-        epilog='.',
-        formatter_class=argparse.RawTextHelpFormatter
+        description='Sample program to convert time series to CSVs on a Qumulo cluster.',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument('--host', required=True, help='Required: Specify host (Qumulo cluster)')
-    parser.add_argument('--user', required=True, help='Specify api user')
-    parser.add_argument('--pass', required=True, dest='passwd', help='Specify api password ')
+    parser.add_argument(
+        'host',
+        help='Qumulo Cluster to communicate with'
+    )
+    parser.add_argument(
+        '-u',
+        '--user',
+        default='admin',
+        help='Username for authentication'
+    )
+    parser.add_argument(
+        '-p',
+        '--password',
+        default='admin',
+        help='Password for authentication'
+    )
+    parser.add_argument(
+        '-P',
+        '--port',
+        type=int,
+        default=8000,
+        help='REST Port for communicating with the cluster'
+    )
     return parser.parse_args(args)
 
 
 def main():
     args = parse_args(sys.argv)
-    rc = RestClient(args.host, 8000)
+    rc = RestClient(args.host, args.port)
     rc.login(args.user, args.passwd);
 
     last_line = None
