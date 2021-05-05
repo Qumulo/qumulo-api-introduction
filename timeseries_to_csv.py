@@ -19,9 +19,20 @@ import datetime
 import argparse
 
 from collections import OrderedDict
-from typing import Sequence
+from typing import Any, Mapping, List, Sequence
 
 from qumulo.rest_client import RestClient
+
+
+CSV_FILENAME = 'qumulo-timeseries-data.csv'
+COLUMNS_TO_PROCESS = [
+    'iops.read.rate',
+    'iops.write.rate',
+    'throughput.read.rate',
+    'throughput.write.rate',
+    'reclaim.deferred.rate',
+    'reclaim.snapshot.rate'
+]
 
 
 def parse_args(args: Sequence[str]) -> argparse.Namespace:
@@ -55,54 +66,81 @@ def parse_args(args: Sequence[str]) -> argparse.Namespace:
     return parser.parse_args(args)
 
 
-def main():
-    args = parse_args(sys.argv)
-    rc = RestClient(args.host, args.port)
-    rc.login(args.user, args.passwd);
-
+def calculate_begin_time(csv_file_name: str) -> int:
+    """
+    At most, we'll grab 1 day of data, but if we already have some data
+    present, we can just request data since then.
+    """
     last_line = None
-    columns = ['iops.read.rate', 'iops.write.rate',
-               'throughput.read.rate', 'throughput.write.rate',
-               'reclaim.deferred.rate', 'reclaim.snapshot.rate']
-
-    csv_file_name = 'qumulo-timeseries-data.csv'
-
     if os.path.exists(csv_file_name):
         # read to the last line in the file
-        with open(csv_file_name, 'rb') as csvfile:
+        with open(csv_file_name, 'r') as csvfile:
             reader = csv.reader(csvfile)
             for row in reader:
                 last_line = row
 
-    # at most we'll have 1 day of data
-    begin_time = int(time.time()) - 60 * 60 * 24
-    # otherwise, pull only the latest data, if we already have a file
     if last_line is not None:
-        begin_time = int(last_line[0]) + 5
-    results = rc.analytics.time_series_get(begin_time = begin_time)
-    num_results = len(results[0]['values'])
-    print(f'Appending {num_results} results to "{csv_file_name}".')
+        return int(last_line[0]) + 5
+    return int(time.time()) - 60 * 60 * 24
+
+
+def read_time_series_from_cluster(
+    host: str,
+    port: int,
+    begin_time: int
+) -> List[Mapping[str, Any]]:
+    """Communicates with the cluster to grab the analytics in time series format"""
+    rest_client = RestClient(host, port)
+    return rest_client.analytics.time_series_get(begin_time=calculate_begin_time())
+
+
+def convert_timeseries_into_dict(
+    results: Sequence[Mapping[str, Any]]
+) -> Mapping[str, Sequence[str]]:
+    """Extracts important values from the timeseries results into a dictionary"""
+
+    if not results:
+        return {}
+
+    # Setup empty lists for each timestamp
     data = {}
-    for i in range(0,len(results[0]['times'])-1):
-        ts = results[0]['times'][i]
-        data[ts] = [None] * len(columns)
+    for timestamp in results[0]['times']:
+        data[timestamp] = [None] * len(COLUMNS_TO_PROCESS)
 
+    # Extract each data point
     for series in results:
-        if series['id'] not in columns:
+        name = series['id']
+        if name not in COLUMNS_TO_PROCESS:
             continue
-        for i in range(0,len(series['values'])):
-            ts = series['times'][i]
-            data[ts][columns.index(series['id'])] = series['values'][i]
 
-    fw = open(csv_file_name, 'a')
-    if last_line is None:
-        fw.write('unix.timestamp,gmtime,' + ','.join(columns) + '\r\n')
-    for ts in sorted(data):
-        gmt = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(ts))
-        fw.write(f'{ts},{gmt},' + ','.join([str(d) for d in data[ts]]) + '\r\n')
-    fw.close()
+        for timestamp, value in zip(series['times'], series['values']):
+            column_idx = COLUMNS_TO_PROCESS.index(name)
+            data[timestamp][column_idx] = value
+
+    return data
+
+
+def write_csv_to_file(data: Mapping[str, Sequence[str]], filename: str) -> None:
+    """Write the provided data to the file, creating headers if needed"""
+    should_add_headers = not os.path.exists(filename) or os.path.getsize(filename) == 0
+
+    with open(filename, 'a') as output_file:
+        if should_add_headers:
+            output_file.write('unix.timestamp,gmtime,' + ','.join(COLUMNS_TO_PROCESS) + '\r\n')
+
+        for ts in sorted(data):
+            gmt = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(ts))
+            output_file.write(f'{ts},{gmt},' + ','.join([str(d) for d in data[ts]]) + '\r\n')
+
+
+
+def main(sys_args: Sequence[str]):
+    args = parse_args(sys_args)
+    results = read_time_series_from_cluster(args.host, args.port)
+    data = convert_timeseries_into_dict(results)
+    write_csv_to_file(data, CSV_FILENAME)
 
 
 # Main
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
