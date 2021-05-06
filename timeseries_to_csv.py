@@ -86,17 +86,19 @@ def calculate_begin_time(csv_file_name: str) -> int:
 
 def read_time_series_from_cluster(
     host: str,
-    port: int,
-    begin_time: int
+    user: str,
+    password: str,
+    port: int
 ) -> List[Mapping[str, Any]]:
     """Communicates with the cluster to grab the analytics in time series format"""
     rest_client = RestClient(host, port)
-    return rest_client.analytics.time_series_get(begin_time=calculate_begin_time())
+    rest_client.login(user, password)
+    return rest_client.analytics.time_series_get(begin_time=calculate_begin_time(CSV_FILENAME))
 
 
 def convert_timeseries_into_dict(
     results: Sequence[Mapping[str, Any]]
-) -> Mapping[str, Sequence[str]]:
+) -> Mapping[int, Sequence[str]]:
     """Extracts important values from the timeseries results into a dictionary"""
 
     if not results:
@@ -105,7 +107,7 @@ def convert_timeseries_into_dict(
     # Setup empty lists for each timestamp
     data = {}
     for timestamp in results[0]['times']:
-        data[timestamp] = [None] * len(COLUMNS_TO_PROCESS)
+        data[int(timestamp)] = [None] * len(COLUMNS_TO_PROCESS)
 
     # Extract each data point
     for series in results:
@@ -115,12 +117,12 @@ def convert_timeseries_into_dict(
 
         for timestamp, value in zip(series['times'], series['values']):
             column_idx = COLUMNS_TO_PROCESS.index(name)
-            data[timestamp][column_idx] = value
+            data[int(timestamp)][column_idx] = value
 
     return data
 
 
-def write_csv_to_file(data: Mapping[str, Sequence[str]], filename: str) -> None:
+def write_csv_to_file(data: Mapping[int, Sequence[str]], filename: str) -> None:
     """Write the provided data to the file, creating headers if needed"""
     should_add_headers = not os.path.exists(filename) or os.path.getsize(filename) == 0
 
@@ -133,14 +135,13 @@ def write_csv_to_file(data: Mapping[str, Sequence[str]], filename: str) -> None:
             output_file.write(f'{ts},{gmt},' + ','.join([str(d) for d in data[ts]]) + '\r\n')
 
 
-
 def main(sys_args: Sequence[str]):
     args = parse_args(sys_args)
-    results = read_time_series_from_cluster(args.host, args.port)
+    results = read_time_series_from_cluster(
+            args.host, args.user, args.password, args.port)
     data = convert_timeseries_into_dict(results)
     write_csv_to_file(data, CSV_FILENAME)
 
 
-# Main
 if __name__ == '__main__':
     main(sys.argv[1:])

@@ -5,7 +5,10 @@ import os
 import unittest
 
 from parameterized import parameterized
+from typing import Mapping, Sequence
+from unittest.mock import patch
 
+from qumulo.rest_client import RestClient
 from timeseries_to_csv import *
 
 
@@ -31,6 +34,25 @@ class ArgparseTest(unittest.TestCase):
     def test_port(self, port_arg: str):
         args = parse_args(['my_host', port_arg, '8001'])
         self.assertEqual(args.port, 8001)
+
+
+def assert_expected_output_file_contents(
+    testcase: unittest.TestCase,
+    filename: str,
+    expected_data: Mapping[int, Sequence[str]]
+) -> None:
+    testcase.assertTrue(os.path.exists(filename))
+    remaining_lines = None
+    with open(filename, 'r') as csv_file:
+        # First line should contain the header
+        testcase.assertIn('unix.timestamp', csv_file.readline())
+        remaining_lines = csv_file.readlines()
+
+    testcase.assertIsNotNone(remaining_lines)
+    testcase.assertEqual(len(expected_data), len(remaining_lines))
+    for data_points, line in zip(expected_data.values(), remaining_lines):
+        for word in data_points:
+            testcase.assertIn(word, line)
 
 
 class HelperTest(unittest.TestCase):
@@ -62,7 +84,7 @@ class HelperTest(unittest.TestCase):
         self.assertFalse(output)
 
     def test_convert_timeseries_into_dict_with_no_relevant_data(self):
-        times = [ '0', '5', '10' ]
+        times = [ 0, 5, 10 ]
         timeseries = [
             {
                 'times': times,
@@ -92,7 +114,7 @@ class HelperTest(unittest.TestCase):
 
     def test_convert_timeseries_into_dict_with_listed_columns(self):
         # N.B. times correspond to the value below
-        times = [ '0', '5', '10' ]
+        times = [ 0, 5, 10 ]
         values = [ 'foo', 'bar', 'baz' ]
 
         timeseries = []
@@ -141,19 +163,7 @@ class HelperTest(unittest.TestCase):
         }
 
         write_csv_to_file(data, self.filename)
-
-        self.assertTrue(os.path.exists(self.filename))
-        remaining_lines = None
-        with open(self.filename, 'r') as csv_file:
-            # First line should contain the header
-            self.assertIn('unix.timestamp', csv_file.readline())
-            remaining_lines = csv_file.readlines()
-
-        self.assertIsNotNone(remaining_lines)
-        self.assertEqual(len(data), len(remaining_lines))
-        for data_points, line in zip(data.values(), remaining_lines):
-            for word in data_points:
-                self.assertIn(word, line)
+        assert_expected_output_file_contents(self, self.filename, data)
 
     def test_write_csv_to_file_appends_to_existing_file(self):
         primary_data = { 0: ['foo', 'bar', 'baz'] }
@@ -164,19 +174,68 @@ class HelperTest(unittest.TestCase):
 
         combined_data = primary_data
         combined_data.update(secondary_data)
+        assert_expected_output_file_contents(self, self.filename, combined_data)
 
-        self.assertTrue(os.path.exists(self.filename))
-        remaining_lines = None
-        with open(self.filename, 'r') as csv_file:
-            # First line should contain the header
-            self.assertIn('unix.timestamp', csv_file.readline())
-            remaining_lines = csv_file.readlines()
 
-        self.assertIsNotNone(remaining_lines)
-        self.assertEqual(len(combined_data), len(remaining_lines))
-        for data_points, line in zip(combined_data.values(), remaining_lines):
-            for word in data_points:
-                self.assertIn(word, line)
+# N.B. We mock out read_time_series_from_cluster instead of the RestClient
+# since the RestClient has dynamic attributes that are difficult to mock. (i.e.
+# we can't easily mock the call to rest_client.analytics.time_series_get())
+@patch('timeseries_to_csv.read_time_series_from_cluster')
+class IntegrationTest(unittest.TestCase):
+    def setUp(self):
+        self.times = [ 0, 5, 10 ]
+        self.values = [ 'foo', 'bar', 'baz' ]
+
+        self.timeseries_from_rest_client = []
+        for column_id in COLUMNS_TO_PROCESS:
+            self.timeseries_from_rest_client.append({
+                'times': self.times,
+                'id': column_id,
+                'values': self.values
+            })
+
+        self.expected_data = {
+            0: ['foo'] * len(COLUMNS_TO_PROCESS),
+            5: ['bar'] * len(COLUMNS_TO_PROCESS),
+            10: ['baz'] * len(COLUMNS_TO_PROCESS)
+        }
+
+    def tearDown(self):
+        if os.path.exists(CSV_FILENAME):
+            os.remove(CSV_FILENAME)
+
+    def test_default_arguments(self, mock_getter):
+        mock_getter.return_value = self.timeseries_from_rest_client
+        main(['localhost'])
+
+        mock_getter.assert_called_with('localhost', 8000)
+
+        assert_expected_output_file_contents(
+                self, CSV_FILENAME, self.expected_data)
+
+    def test_default_arguments(self, mock_getter):
+        mock_getter.return_value = self.timeseries_from_rest_client
+        main(['localhost'])
+
+        mock_getter.assert_called_with('localhost', 'admin', 'admin', 8000)
+        assert_expected_output_file_contents(
+                self, CSV_FILENAME, self.expected_data)
+
+    def test_passes_argument_to_rest_client(self, mock_getter):
+        mock_getter.return_value = self.timeseries_from_rest_client
+        main(['localhost', '-u', 'my_user', '-p', 'my_password', '-P', '8001'])
+
+        mock_getter.assert_called_with(
+                'localhost', 'my_user', 'my_password', 8001)
+        assert_expected_output_file_contents(
+                self, CSV_FILENAME, self.expected_data)
+
+    def test_creates_header_only_file_if_no_data_from_server(self, mock_getter):
+        mock_getter.return_value = {}
+        main(['localhost'])
+
+        mock_getter.assert_called_with('localhost', 'admin', 'admin', 8000)
+        assert_expected_output_file_contents(self, CSV_FILENAME, {})
 
 
 if __name__ == '__main__':
