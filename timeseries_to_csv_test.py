@@ -213,16 +213,7 @@ class IntegrationTest(unittest.TestCase):
         if os.path.exists(CSV_FILENAME):
             os.remove(CSV_FILENAME)
 
-    def test_default_arguments(self, mock_getter):
-        mock_getter.return_value = self.timeseries_from_rest_client
-        main(['localhost'])
-
-        mock_getter.assert_called_with('localhost', 8000)
-
-        assert_expected_output_file_contents(
-                self, CSV_FILENAME, self.expected_data)
-
-    def test_default_arguments(self, mock_getter):
+    def test_default_arguments(self, mock_getter) -> None:
         mock_getter.return_value = self.timeseries_from_rest_client
         main(['localhost'])
 
