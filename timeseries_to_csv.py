@@ -11,10 +11,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import os
-import csv
-import time
 import argparse
+import csv
+import os
+import time
+import sys
 
 from typing import Any, Mapping, List, Sequence
 
