@@ -8,7 +8,6 @@ from parameterized import parameterized
 from typing import Mapping, Sequence
 from unittest.mock import patch
 
-from qumulo.rest_client import RestClient
 from timeseries_to_csv import (
     COLUMNS_TO_PROCESS,
     CSV_FILENAME,
@@ -16,7 +15,6 @@ from timeseries_to_csv import (
     convert_timeseries_into_dict,
     main,
     parse_args,
-    read_time_series_from_cluster,
     write_csv_to_file,
 )
 
@@ -78,7 +76,9 @@ class HelperTest(unittest.TestCase):
         current_time_minus_one_day = int(time.time()) - (60 * 60 * 24)
         self.assertLessEqual(begin_time, current_time_minus_one_day)
 
-    def test_calculate_begin_time_uses_latest_time_from_existing_file(self) -> None:
+    def test_calculate_begin_time_uses_latest_time_from_existing_file(
+        self
+    ) -> None:
         with open(self.filename, 'w') as csv_file:
             csv_file.writelines(['12,\n', '17,\n', '22,\n'])
 
@@ -136,8 +136,8 @@ class HelperTest(unittest.TestCase):
 
         output = convert_timeseries_into_dict(timeseries)
 
-        for time, row in output.items():
-            expected_value = values[times.index(time)]
+        for timestamp, row in output.items():
+            expected_value = values[times.index(timestamp)]
             for entry in row:
                 self.assertEqual(entry, expected_value)
 
