@@ -22,7 +22,7 @@ from timeseries_to_csv import (
 
 
 class ArgparseTest(unittest.TestCase):
-    def test_default_arguments(self):
+    def test_default_arguments(self) -> None:
         args = parse_args(['my_host'])
         self.assertEqual(args.host, 'my_host')
         self.assertEqual(args.user, 'admin')
@@ -30,17 +30,17 @@ class ArgparseTest(unittest.TestCase):
         self.assertEqual(args.port, 8000)
 
     @parameterized.expand([['-u'], ['--user']])
-    def test_user(self, user_arg: str):
+    def test_user(self, user_arg: str) -> None:
         args = parse_args(['my_host', user_arg, 'my_user'])
         self.assertEqual(args.user, 'my_user')
 
     @parameterized.expand([['-p'], ['--password']])
-    def test_password(self, password_arg: str):
+    def test_password(self, password_arg: str) -> None:
         args = parse_args(['my_host', password_arg, 'my_user'])
         self.assertEqual(args.password, 'my_user')
 
     @parameterized.expand([['-P'], ['--port']])
-    def test_port(self, port_arg: str):
+    def test_port(self, port_arg: str) -> None:
         args = parse_args(['my_host', port_arg, '8001'])
         self.assertEqual(args.port, 8001)
 
@@ -65,34 +65,34 @@ def assert_expected_output_file_contents(
 
 
 class HelperTest(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.filename = 'test-file.csv'
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         if os.path.exists(self.filename):
             os.remove(self.filename)
 
-    def test_calculate_begin_time_no_existing_file_uses_last_day(self):
+    def test_calculate_begin_time_no_existing_file_uses_last_day(self) -> None:
         begin_time = calculate_begin_time(self.filename)
 
         current_time_minus_one_day = int(time.time()) - (60 * 60 * 24)
         self.assertLessEqual(begin_time, current_time_minus_one_day)
 
-    def test_calculate_begin_time_uses_latest_time_from_existing_file(self):
+    def test_calculate_begin_time_uses_latest_time_from_existing_file(self) -> None:
         with open(self.filename, 'w') as csv_file:
             csv_file.writelines(['12,\n', '17,\n', '22,\n'])
 
         begin_time = calculate_begin_time(self.filename)
         self.assertEqual(begin_time, 27)
 
-    def test_convert_timeseries_into_dict_empty(self):
+    def test_convert_timeseries_into_dict_empty(self) -> None:
         timeseries = []
         output = convert_timeseries_into_dict(timeseries)
 
         # Empty dictionaries evaluate to false
         self.assertFalse(output)
 
-    def test_convert_timeseries_into_dict_with_no_relevant_data(self):
+    def test_convert_timeseries_into_dict_with_no_relevant_data(self) -> None:
         times = [0, 5, 10]
         timeseries = [
             {
@@ -121,7 +121,7 @@ class HelperTest(unittest.TestCase):
             for entry in row:
                 self.assertIsNone(entry)
 
-    def test_convert_timeseries_into_dict_with_listed_columns(self):
+    def test_convert_timeseries_into_dict_with_listed_columns(self) -> None:
         # N.B. times correspond to the value below
         times = [0, 5, 10]
         values = ['foo', 'bar', 'baz']
@@ -141,7 +141,7 @@ class HelperTest(unittest.TestCase):
             for entry in row:
                 self.assertEqual(entry, expected_value)
 
-    def test_write_csv_to_file_creates_headers_if_no_file(self):
+    def test_write_csv_to_file_creates_headers_if_no_file(self) -> None:
         data = {}
         write_csv_to_file(data, self.filename)
 
@@ -150,7 +150,7 @@ class HelperTest(unittest.TestCase):
             # First line should contain the header
             self.assertIn('unix.timestamp', csv_file.readline())
 
-    def test_write_csv_to_file_creates_headers_if_empty_file(self):
+    def test_write_csv_to_file_creates_headers_if_empty_file(self) -> None:
         data = {}
 
         # Touch the file, so it exists but is empty
@@ -164,7 +164,7 @@ class HelperTest(unittest.TestCase):
             # First line should contain the header
             self.assertIn('unix.timestamp', csv_file.readline())
 
-    def test_write_csv_to_file_dumps_data_in_csv_format(self):
+    def test_write_csv_to_file_dumps_data_in_csv_format(self) -> None:
         data = {
             0: ['foo', 'bar', 'baz'],
             5: ['fiz', 'bang', 'zap'],
@@ -174,7 +174,7 @@ class HelperTest(unittest.TestCase):
         write_csv_to_file(data, self.filename)
         assert_expected_output_file_contents(self, self.filename, data)
 
-    def test_write_csv_to_file_appends_to_existing_file(self):
+    def test_write_csv_to_file_appends_to_existing_file(self) -> None:
         primary_data = { 0: ['foo', 'bar', 'baz'] }
         secondary_data = { 5: ['fiz', 'bang', 'zap'] }
 
@@ -183,7 +183,8 @@ class HelperTest(unittest.TestCase):
 
         combined_data = primary_data
         combined_data.update(secondary_data)
-        assert_expected_output_file_contents(self, self.filename, combined_data)
+        assert_expected_output_file_contents(
+                self, self.filename, combined_data)
 
 
 # N.B. We mock out read_time_series_from_cluster instead of the RestClient
@@ -191,7 +192,7 @@ class HelperTest(unittest.TestCase):
 # we can't easily mock the call to rest_client.analytics.time_series_get())
 @patch('timeseries_to_csv.read_time_series_from_cluster')
 class IntegrationTest(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.times = [0, 5, 10]
         self.values = ['foo', 'bar', 'baz']
 
@@ -209,7 +210,7 @@ class IntegrationTest(unittest.TestCase):
             10: ['baz'] * len(COLUMNS_TO_PROCESS)
         }
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         if os.path.exists(CSV_FILENAME):
             os.remove(CSV_FILENAME)
 
@@ -221,7 +222,7 @@ class IntegrationTest(unittest.TestCase):
         assert_expected_output_file_contents(
                 self, CSV_FILENAME, self.expected_data)
 
-    def test_passes_argument_to_rest_client(self, mock_getter):
+    def test_passes_argument_to_rest_client(self, mock_getter) -> None:
         mock_getter.return_value = self.timeseries_from_rest_client
         main(['localhost', '-u', 'my_user', '-p', 'my_password', '-P', '8001'])
 
@@ -230,7 +231,10 @@ class IntegrationTest(unittest.TestCase):
         assert_expected_output_file_contents(
                 self, CSV_FILENAME, self.expected_data)
 
-    def test_creates_header_only_file_if_no_data_from_server(self, mock_getter):
+    def test_creates_header_only_file_if_no_data_from_server(
+        self,
+        mock_getter
+    ) -> None:
         mock_getter.return_value = {}
         main(['localhost'])
 
