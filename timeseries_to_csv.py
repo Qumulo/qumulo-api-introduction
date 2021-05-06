@@ -14,11 +14,8 @@
 import os
 import csv
 import time
-import calendar
-import datetime
 import argparse
 
-from collections import OrderedDict
 from typing import Any, Mapping, List, Sequence
 
 from qumulo.rest_client import RestClient
@@ -37,7 +34,7 @@ COLUMNS_TO_PROCESS = [
 
 def parse_args(args: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description='Sample program to convert time series to CSVs on a Qumulo cluster.',
+        description='Get time series data from a Qumulo cluster, write to CSV',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
@@ -90,16 +87,22 @@ def read_time_series_from_cluster(
     password: str,
     port: int
 ) -> List[Mapping[str, Any]]:
-    """Communicates with the cluster to grab the analytics in time series format"""
+    """
+    Communicates with the cluster to grab the analytics in time series format
+    """
     rest_client = RestClient(host, port)
     rest_client.login(user, password)
-    return rest_client.analytics.time_series_get(begin_time=calculate_begin_time(CSV_FILENAME))
+    return rest_client.analytics.time_series_get(
+            begin_time=calculate_begin_time(CSV_FILENAME))
 
 
 def convert_timeseries_into_dict(
     results: Sequence[Mapping[str, Any]]
 ) -> Mapping[int, Sequence[str]]:
-    """Extracts important values from the timeseries results into a dictionary"""
+    """
+    Extracts important values from the timeseries results into a dictionary,
+    keyed by timestamp.
+    """
 
     if not results:
         return {}
@@ -122,17 +125,21 @@ def convert_timeseries_into_dict(
     return data
 
 
-def write_csv_to_file(data: Mapping[int, Sequence[str]], filename: str) -> None:
+def write_csv_to_file(
+    data: Mapping[int, Sequence[str]],
+    filename: str
+) -> None:
     """Write the provided data to the file, creating headers if needed"""
-    should_add_headers = not os.path.exists(filename) or os.path.getsize(filename) == 0
-
     with open(filename, 'a') as output_file:
-        if should_add_headers:
-            output_file.write('unix.timestamp,gmtime,' + ','.join(COLUMNS_TO_PROCESS) + '\r\n')
+        # Add headers if they don't exist
+        if os.path.getsize(filename) == 0:
+            columns_csv = ','.join(COLUMNS_TO_PROCESS)
+            output_file.write(f'unix.timestamp,gmtime,{columns_csv}\r\n')
 
         for ts in sorted(data):
             gmt = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(ts))
-            output_file.write(f'{ts},{gmt},' + ','.join([str(d) for d in data[ts]]) + '\r\n')
+            data_csv = ','.join([str(d) for d in data[ts]])
+            output_file.write(f'{ts},{gmt},{data_csv}\r\n')
 
 
 def main(sys_args: Sequence[str]):

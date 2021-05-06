@@ -9,7 +9,16 @@ from typing import Mapping, Sequence
 from unittest.mock import patch
 
 from qumulo.rest_client import RestClient
-from timeseries_to_csv import *
+from timeseries_to_csv import (
+    COLUMNS_TO_PROCESS,
+    CSV_FILENAME,
+    calculate_begin_time,
+    convert_timeseries_into_dict,
+    main,
+    parse_args,
+    read_time_series_from_cluster,
+    write_csv_to_file,
+)
 
 
 class ArgparseTest(unittest.TestCase):
@@ -71,7 +80,7 @@ class HelperTest(unittest.TestCase):
 
     def test_calculate_begin_time_uses_latest_time_from_existing_file(self):
         with open(self.filename, 'w') as csv_file:
-            csv_file.writelines([ '12,\n', '17,\n', '22,\n' ])
+            csv_file.writelines(['12,\n', '17,\n', '22,\n'])
 
         begin_time = calculate_begin_time(self.filename)
         self.assertEqual(begin_time, 27)
@@ -84,7 +93,7 @@ class HelperTest(unittest.TestCase):
         self.assertFalse(output)
 
     def test_convert_timeseries_into_dict_with_no_relevant_data(self):
-        times = [ 0, 5, 10 ]
+        times = [0, 5, 10]
         timeseries = [
             {
                 'times': times,
@@ -114,8 +123,8 @@ class HelperTest(unittest.TestCase):
 
     def test_convert_timeseries_into_dict_with_listed_columns(self):
         # N.B. times correspond to the value below
-        times = [ 0, 5, 10 ]
-        values = [ 'foo', 'bar', 'baz' ]
+        times = [0, 5, 10]
+        values = ['foo', 'bar', 'baz']
 
         timeseries = []
         for column_id in COLUMNS_TO_PROCESS:
@@ -183,8 +192,8 @@ class HelperTest(unittest.TestCase):
 @patch('timeseries_to_csv.read_time_series_from_cluster')
 class IntegrationTest(unittest.TestCase):
     def setUp(self):
-        self.times = [ 0, 5, 10 ]
-        self.values = [ 'foo', 'bar', 'baz' ]
+        self.times = [0, 5, 10]
+        self.values = ['foo', 'bar', 'baz']
 
         self.timeseries_from_rest_client = []
         for column_id in COLUMNS_TO_PROCESS:
