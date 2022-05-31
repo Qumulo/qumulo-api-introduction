@@ -11,19 +11,16 @@ Below is a diagram of the Qumulo API ecosystem. The green elements highlight the
 ## Installation
 
 1. Install the necessary tools:
-    - **Python** [python 3.4.x](https://www.python.org/downloads/)
+    - [**Python 3.8+**](https://www.python.org/downloads/)
+    - [**pip** ](https://pip.pypa.io)
     - **curl** (`brew install curl` on a mac or `apt-get install curl` on Ubuntu)
-2. In your web browser, log in to the Qumulo cluster. Navigate to "API & Tools" (/api) in the web application.
-3. Click "Download Command-Line Tools" at the top of the page.
-4. Unzip the qumulo_api.zip 
-5. `cd` inside of the unzipped qumulo_api directory. You shoud see `qq` and a directory names `qumulo`.
+2. Run `pip install qumulo-api`. To install a version of the Python SDK that matches a particular version of Qumulo Core, specify the Qumulo Core version in the command like so: `pip install qumulo-api==5.1.1`.
 
 ## Interacting with the Qumulo API
 
-
 ### qq - Qumulo's user-friendly and powerful command-line tool
 
-Our engineering team have shared their "power tools" with us in the form of the `qq` command line tool. With `qq` you can use the power of the Qumulo API from a command line on MacOSX, Windows, or Linux.
+The Python SDK includes the `qq` command line tool, which is installed into your system's `PATH` so that it can be run from anywhere. With `qq` you can use the power of the Qumulo API from a command line on MacOSX, Windows, or Linux.
 
 ```bash
 export API_HOSTNAME={your-qumulo-cluster-host-name}
@@ -31,10 +28,10 @@ export API_USER={your-qumulo-api-user-name}
 export API_PASSWORD={your-qumulo-api-password}
 
 # 1. Login using the credentials above.
-./qq --host $API_HOSTNAME login -u $API_USER -p $API_PASSWORD
+$ qq --host $API_HOSTNAME login -u $API_USER -p $API_PASSWORD
 
 # 2. 
-./qq --host $API_HOSTNAME fs_get_stats
+$ qq --host $API_HOSTNAME fs_get_stats
 
 # It should return something that looks like this:
 {
@@ -45,17 +42,17 @@ export API_PASSWORD={your-qumulo-api-password}
 }
 
 # 3. See all the commands available:
-./qq
+$ qq
 
 #4. See help on a specific command (such as adding an NFS share):
-./qq nfs_add_share -h
+$ qq nfs_add_share -h
 
 ```
 
 ```bash 
 # For extra credit, install jq ("brew install jq" on a Mac)
 # Run this command to see the aggregate capacity for all files and directories in the root path of the Qumulo cluster:
-./qq --host $API_HOSTNAME fs_read_dir_aggregates --path / | \
+$ qq --host $API_HOSTNAME fs_read_dir_aggregates --path / | \
     jq -r '.files | to_entries[] | [ .value.capacity_usage, .value.name, .value.type] | @tsv' | sort -rn
 ```
 
@@ -70,7 +67,7 @@ export API_PASSWORD={your-qumulo-api-password}
 ```
 
 Then, from the command line, start python `$ python3` and run the following code:
-```python
+```
 import os
 from qumulo.rest_client import RestClient
 
